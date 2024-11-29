@@ -1,20 +1,41 @@
+import 'package:blackbox/entities/url.dart';
+import 'package:blackbox/pages/picture_list.dart';
+import 'package:blackbox/pages/video_list.dart';
 import 'package:flutter/material.dart';
 
-class Home extends StatelessWidget {
-  const Home({super.key});
+class HomePages extends StatelessWidget {
+  final UrlEntity? filesPath;
+  const HomePages({super.key, required this.filesPath});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Row(
-        children: [
-          Column(
+    return Scaffold(
+      body: Container(
+        margin: const EdgeInsets.symmetric(vertical: 20),
+        child: Container(
+          height: 200,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
             children: [
-              Text('Test 1'),
-              Text('Test 2'),
+              FilledButton(
+                onPressed: () { Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => PictureListPages(imgUrls: filesPath!.images)
+                  )
+                ); },
+                child: Text('${filesPath!.images.length} Picture(s)'),
+              ),
+              FilledButton(
+                onPressed: () { Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (context) => VideoListPages(vidUrls: filesPath!.videos)
+                    )
+                ); },
+                child: Text('${filesPath!.videos.length} Video(s)'),
+              ),
             ],
-          )
-        ],
+          ),
+        ),
       ),
     );
   }

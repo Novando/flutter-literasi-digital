@@ -1,20 +1,21 @@
+import 'package:blackbox/entities/url.dart';
+import 'package:blackbox/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+class SplashScreenPages extends StatefulWidget {
+  const SplashScreenPages({super.key});
 
   @override
-  State<StatefulWidget> createState() => SplashScreenState();
+  State<StatefulWidget> createState() => SplashScreenPagesState();
 }
 
-class SplashScreenState extends State<SplashScreen> {
-  final String baseUrl = 'http://localhost/';
+class SplashScreenPagesState extends State<SplashScreenPages> {
+  final String hostUrl = 'http://192.168.222.76/';
   List<String> files = [];
-  List<String> vidUrls = [];
-  List<String> picUrls = [];
   bool isLoading = true;
+  UrlEntity? fileUrls;
 
   @override
   initState() {
@@ -24,18 +25,10 @@ class SplashScreenState extends State<SplashScreen> {
 
   Future init() async {
     try {
-      final response = await http.get(Uri.parse(baseUrl));
-      if (response.statusCode == 200) {
-        final document = parse(response.body);
-        final links = document.querySelectorAll('a');
-        setState(() {
-          files = links.map((e) => e.text).toList();
-        });
-      } else {
-        throw Exception('Failed to load directory');
-      }
+      final res = await pathCheck(hostUrl);
+      fileUrls = filterFiles(res);
     } catch (e) {
-      print('Error fetching directory: $e');
+      print('Error reading file paths: $e');
     } finally {
       setState(() {
         isLoading = false;
@@ -43,20 +36,54 @@ class SplashScreenState extends State<SplashScreen> {
     }
   }
 
+  Future<List<String>> pathCheck(String baseUrl) async {
+    List<String> links = [];
+    try {
+      final res = await http.get(Uri.parse(baseUrl));
+      if (res.statusCode == 200) {
+        final document = parse(res.body);
+        final queries = document.querySelectorAll('a');
+        for (int i = 0; i < queries.length; i++) {
+          if (queries[i].text == '../') continue;
+          final pathUrl = "$baseUrl${queries[i].text}";
+          if (queries[i].text.contains('/')) {
+            links.addAll(await pathCheck(pathUrl));
+          } else {
+            links.add(pathUrl);
+          }
+        }
+      } else {
+        throw Exception('Failed to load directory');
+      }
+    } catch (e) {
+      print('Error fetching directory: $e');
+    }
+    return links;
+  }
+
+  UrlEntity filterFiles(List<String> arg) {
+    const imgExts = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+    const vidExts = ['mp4', 'mkv', 'flv', 'avi', 'mov', 'ts', 'wmv'];
+    List<String> vids = [];
+    List<String> imgs = [];
+    arg.forEach((e) {
+      final ext = e.split('.').last.toLowerCase();
+      if (imgExts.contains(ext)) {
+        imgs.add(e);
+      } else if (vidExts.contains(ext)) {
+        vids.add(e);
+      }
+    });
+    return new UrlEntity(vids, imgs);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading ?
         const Center(child: CircularProgressIndicator()) :
-        files.isEmpty ?
-        const Center(child: Text('NO DATA')) :
-        const Row()
-        // ListView.builder(
-        // itemBuilder: (c, i) {
-        //   return ListTile(
-        //     title: Text(files[i]),
-        //   );
-        // }),
+        fileUrls != null ?
+        HomePages(filesPath: fileUrls) :
+        const Center(child: Text('NO DATA'))
     );
   }
 }
