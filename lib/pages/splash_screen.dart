@@ -12,7 +12,7 @@ class SplashScreenPages extends StatefulWidget {
 }
 
 class SplashScreenPagesState extends State<SplashScreenPages> {
-  final String hostUrl = 'http://192.168.222.76/';
+  final String hostUrl = 'http://192.168.132.197/';
   List<String> files = [];
   bool isLoading = true;
   UrlEntity? fileUrls;
